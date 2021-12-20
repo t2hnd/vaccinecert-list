@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>ワクチン証明書アプリ対応状況検索</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@7.3.1/themes/reset-min.css"
+        integrity="sha256-t2ATOGCtAIZNnzER679jwcFcKYfLlw01gli6F6oszk8=" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/instantsearch.css@7.3.1/themes/algolia-min.css"
+        integrity="sha256-HB49n/BZjuqiCtQQf49OdZn63XuKFaxcIHWf0HNKte8=" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/bootstrap/3.3.5/css/bootstrap.min.css" />
+    <style>
+        body,
+        h1 {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+                "Segoe UI Symbol";
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .search-panel {
+            display: grid;
+            grid-template-columns: 20% 75%;
+            grid-gap: 5%;
+        }
+
+        .left-panel h2 {
+            font-size: 1.5rem
+        }
+
+        .ais-Highlight-highlighted,
+        .ais-RefinementList-labelText mark {
+            color: inherit;
+            font-size: inherit;
+            padding: 0;
+        }
+
+        .ais-RefinementList-labelText {
+            font-size: 1.5rem;
+        }
+
+        .ais-Hits-item {
+            width: 80%
+        }
+
+        .ais-Hits-item article {
+            display: flex;
+        }
+
+        .ais-Stats-text {
+            font-size: 1.5rem;
+        }
+
+        .cityInfo {
+            width: calc(100%-118px);
+            margin-left: 1rem;
+            font-size: 1.5rem
+        }
+
+        .cityInfo .status {
+            font-weight: bold;
+        }
+
+        .ais-SearchBox {
+            margin: 1rem 0 1rem 0;
+        }
+
+        #searchbox .ais-SearchBox .ais-SearchBox-form input {
+            font-size: 2rem;
+            padding-left: 3rem;
+        }
+
+        #pagination {
+            margin: 2rem auto;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>ワクチン証明書アプリ対応状況検索</h1>
+        <p>出典:デジタル庁FAQページ添付のCSVファイル <a href="https://www.digital.go.jp/policies/vaccinecert/faq_04">https://www.digital.go.jp/policies/vaccinecert/faq_04</a></p>
+        
+
+        <div class="search-panel">
+            <div class="left-panel">
+                <div id="currentRefinements"></div>
+                <h2>ステータス</h2>
+                <div id="refinementStatus"></div>
+                <h2>最終更新日</h2>
+                <div id="refinementLastUpdated"></div>
+
+            </div>
+            <div class="right-panel">
+                <div id="searchbox"></div>
+                <div id="stats"></div>
+                <div id="hits"></div>
+                <div id="pagination" class="text-center"></div>
+                <div id="poweredBy"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.includes"></script>
+    <script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.0.0/dist/algoliasearch-lite.umd.js"
+        integrity="sha256-MfeKq2Aw9VAkaE9Caes2NOxQf6vUa8Av0JqcUXUGkd0=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4.0.0/dist/instantsearch.production.min.js"
+        integrity="sha256-6S7q0JJs/Kx4kb/fv0oMjS855QTz5Rc2hh9AkIUjUsk=" crossorigin="anonymous"></script>
+
+    <script>
+        var search = instantsearch({
+            indexName: 'cities',
+            searchClient: algoliasearch('Q8A1YW2IQP', '594b6577cac25c46a31a9eafcd43bd92'),
+            routing: true,
+        });
+
+        search.addWidgets([
+            instantsearch.widgets.searchBox({
+                container: '#searchbox',
+            }),
+
+            instantsearch.widgets.stats({
+                container: '#stats',
+            }),
+            instantsearch.widgets.poweredBy({
+                container: '#poweredBy',
+            }),
+        ]);
+
+        var hitTemplate = `
+                  <article>
+                    <div class="cityInfo">
+                        <span>{{#helpers.highlight}}{"attribute" : "cityName"}{{/helpers.highlight}}</span>
+                        <span class="status">{{#helpers.highlight}}{ "attribute":"status" }{{/helpers.highlight}}</span>
+                        <span>@{{lastUpdated}}</span>
+                    </div>
+                  </article>
+                  `
+
+        var noResultsTemplate =
+            '<div class="text-center">No results found matching <strong>{{query}}</strong>.</div>';
+
+        search.addWidgets([
+            instantsearch.widgets.configure({
+                getRankingInfo: true,
+            }),
+            instantsearch.widgets.hits({
+                container: '#hits',
+                hitsPerPage: 10,
+                templates: {
+                    empty: noResultsTemplate,
+                    item: hitTemplate,
+                },
+            }),
+            instantsearch.widgets.pagination({
+                container: '#pagination',
+            }),
+
+            instantsearch.widgets.currentRefinements({
+                container: "#currentRefinements"
+            }),
+            instantsearch.widgets.refinementList({
+                container: "#refinementStatus",
+                attribute: "status",
+            }),
+            instantsearch.widgets.refinementList({
+                container: "#refinementLastUpdated",
+                attribute: "lastUpdated",
+            })
+        ]);
+
+        search.start();
+    </script>
+</body>
+
+</html>
